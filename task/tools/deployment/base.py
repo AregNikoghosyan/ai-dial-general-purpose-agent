@@ -25,21 +25,59 @@ class DeploymentTool(BaseTool, ABC):
         return {}
 
     async def _execute(self, tool_call_params: ToolCallParams) -> str | Message:
-        #TODO:
-        # 1. Load arguments with `json`
-        # 2. Get `prompt` from arguments (by default we provide `prompt` for each deployment tool, use this param name as standard)
-        # 3. Delete `prompt` from `arguments` (there can be provided additional parameters and `prompt` will be added
-        #    as user message content and other parameters as `custom_fields`)
-        # 4. Create AsyncDial client (api_version is 2025-01-01-preview)
-        # 5. Call chat completions with:
-        #   - messages (here will be just user message. Optionally, in this class you can add system prompt `property`
-        #     and if any deployment tool provides system prompt then we need to set it as first message (system prompt))
-        #   - stream it
-        #   - deployment_name
-        #   - extra_body with `custom_fields` https://dialx.ai/dial_api#operation/sendChatCompletionRequest (last request param in documentation)
-        #   - **self.tool_parameters (will load all tool parameters that were set up in deployment tools as params, like
-        #     `top_p`, `temperature`, etc...)
-        # 6. Collect content and it to stage, also, collect custom_content -> attachments and if they are present add
-        #    them to stage as attachment as well
-        # 7. Return Message with tool role, content, custom_content and tool_call_id
-        raise NotImplementedError()
+        args = json.loads(tool_call_params.tool_call.function.arguments)
+        prompt = args.get("prompt")
+        del args["prompt"]
+
+        client = AsyncDial(
+            base_url=self.endpoint,
+            api_key=tool_call_params.api_key,
+            api_version="2025-01-01-preview",
+        )
+
+        messages = [{"role": "user", "content": prompt}]
+
+        # Pass remaining args (size, quality, style, etc.) as extra_body
+        extra_body: dict[str, Any] = dict(args) if args else {}
+
+        stage = tool_call_params.stage
+
+        print(f"[DeploymentTool] Calling deployment={self.deployment_name}, prompt={prompt!r}, extra_body={extra_body}")
+        response = await client.chat.completions.create(
+            messages=messages,
+            stream=False,
+            deployment_name=self.deployment_name,
+            extra_body=extra_body,
+            **self.tool_parameters,
+        )
+        print(f"[DeploymentTool] Raw response: {response}")
+
+        content = ""
+        attachments = []
+
+        if response.choices:
+            msg = response.choices[0].message
+            print(f"[DeploymentTool] message.content={msg.content!r}")
+            print(f"[DeploymentTool] message.custom_content={msg.custom_content}")
+            if msg.content:
+                content = msg.content
+                stage.append_content(content)
+            if msg.custom_content and msg.custom_content.attachments:
+                for att in msg.custom_content.attachments:
+                    print(f"[DeploymentTool] attachment: type={att.type}, url={att.url}, title={att.title}")
+                    attachments.append(att)
+                    if att.url:
+                        stage.add_attachment(
+                            url=att.url,
+                            type=att.type,
+                            title=att.title,
+                        )
+
+        custom_content = CustomContent(attachments=attachments) if attachments else None
+
+        return Message(
+            role=Role.TOOL,
+            content=StrictStr(content) if content else None,
+            custom_content=custom_content,
+            tool_call_id=StrictStr(tool_call_params.tool_call.id),
+        )

@@ -1,5 +1,6 @@
 # General Purpose Agent
 
+
 **Equipped with:**
 - WEB Search (DuckDuckGo MCP Server. Performs WEB search and content fetching)
 - Python Code Interpreter (MCP Server. A stateful Python code execution environment with Jupyter kernel support)

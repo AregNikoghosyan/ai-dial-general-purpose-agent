@@ -18,7 +18,7 @@
       "upstreams": [
         {
           "endpoint": "https://ai-proxy.lab.epam.com/openai/deployments/gpt-4o/chat/completions",
-          "key": ""
+          "key": "YOUR_DIAL_API_KEY_HERE"
         }
       ]
     },
@@ -30,7 +30,7 @@
       "upstreams": [
         {
           "endpoint": "https://ai-proxy.lab.epam.com/openai/deployments/dall-e-3/chat/completions",
-          "key": ""
+          "key": "YOUR_DIAL_API_KEY_HERE"
         }
       ]
     },
@@ -42,7 +42,7 @@
       "upstreams": [
         {
           "endpoint": "https://ai-proxy.lab.epam.com/openai/deployments/anthropic.claude-haiku-4-5-20251001-v1:0/chat/completions",
-          "key": ""
+          "key": "YOUR_DIAL_API_KEY_HERE"
         }
       ]
     }

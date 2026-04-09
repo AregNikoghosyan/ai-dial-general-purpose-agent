@@ -1,0 +1,15 @@
+{
+  "server": {
+    "port": 8080
+  },
+  "identityProviders": {
+    "test": {
+      "rolePath": "roles",
+      "disableJwtVerification": true
+    }
+  },
+  "encryption": {
+    "secret": "YOUR_ENCRYPTION_SECRET_HERE",
+    "key": "YOUR_ENCRYPTION_KEY_HERE"
+  }
+}
